@@ -921,7 +921,7 @@ function fond(){
   k.width = W * dpr; k.height = H * dpr;
   const x = k.getContext("2d"); x.scale(dpr, dpr);
   avec(x, () => M.fond(J));
-  habilleSol(x, k);
+  habilleSol(x, k, M);
   return (fondCache = k);
 }
 
@@ -1614,7 +1614,7 @@ function montreMenu(){
     avec(x, () => {
       const faux = { t:0, tours:[], ennemis:[], vies:monde.vies, viesMax:monde.vies, mode:"petit", apercu:true, argent:0, vague:0, file:[], cadeaux:[], carte:0 };
       if (monde.charge) monde.charge(0);
-      monde.init(faux); monde.fond(faux); habilleSol(x, k);
+      monde.init(faux); monde.fond(faux); habilleSol(x, k, monde);
       if (monde.dessineSol) monde.dessineSol(faux);
       for (const [type, px, py, ang] of (monde.apercu.tours || [])){
         const d = monde.tours[type];
@@ -1652,7 +1652,7 @@ function vignette(monde, carte, larg = 320){
   avec(x, () => {
     const faux = { t:0, tours:[], ennemis:[], vies:monde.vies, viesMax:monde.vies, mode:"petit", apercu:true, argent:0, vague:0, file:[], cadeaux:[], carte };
     if (monde.charge) monde.charge(carte);
-    monde.init(faux); monde.fond(faux); habilleSol(x, k);
+    monde.init(faux); monde.fond(faux); habilleSol(x, k, monde);
     if (monde.dessineSol) monde.dessineSol(faux);
   });
   OMBRE = ancien;

@@ -30,11 +30,11 @@ Le jeu s'habille selon la fête : guirlande au-dessus du cadre, couleurs, sol et
 | Fête | Ce qui change |
 |---|---|
 | `habituel` | rien, c'est la tenue de tous les jours |
-| `halloween` | herbe d'automne, citrouilles, tas de feuilles, chauves-souris, toiles d'araignée, chapeaux de sorcière |
-| `noel` | l'herbe devient neige (sable et chemins givrés), sapins, bonshommes de neige, flocons, guirlande lumineuse, bonnets rouges |
-| `carnaval` | confettis et serpentins par terre et dans l'air, fanions, chapeaux pointus |
-| `paques` | herbe de printemps, œufs cachés, tulipes, fleurs, pétales, papillons, oreilles de lapin |
-| `ete` | herbe dorée, pâquerettes, ballon de plage, soleil, chapeaux de paille |
+| `halloween` | herbe d’automne, sable du soir, nuit violette et soleil citrouille dans l’espace, citrouilles, fantômes, lune, chauves-souris, toiles d’araignée, la sorcière passe sur son balai, chapeaux de sorcière |
+| `noel` | l’herbe devient neige, la plage est enneigée, sapins, bonshommes de neige, pingouins, boules et sucres d’orge dans l’espace, le traîneau du Père Noël passe, guirlande lumineuse, bonnets rouges |
+| `carnaval` | confettis et serpentins par terre et dans l’air, nuit prune et feux d’artifice dans l’espace, masques, fanions, chapeaux pointus |
+| `paques` | herbe de printemps, œufs cachés, poussins, tulipes, ciel pastel et vaisseau-œuf dans l’espace, pétales, papillons, oreilles de lapin |
+| `ete` | herbe dorée, serviettes, parasols, étoiles de mer, glaces et bouées dans l’espace, une soucoupe passe avec sa banderole, chapeaux de paille |
 
 Les chapeaux se posent sur la tête de chaque bestiole : `yeux()` la repère tout seul ; une bestiole qui dessine ses yeux à la main appelle `marqueTete(x, y, taille)`.
 

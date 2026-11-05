@@ -163,6 +163,7 @@ function chauveSouris(x, y, k, g, battement){
 const bougeMoins = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(e){ return false; } };
 function dessineFete(){
   if (!FETE.chute && !FETE.voile) return;
+  if (M && M.id === "espace") passageEspace();
   const t = J.t, calme = bougeMoins();
   if (FETE.voile){ c.fillStyle = FETE.voile; c.fillRect(0, 0, W, H); }
   const tombe = (n, vMin, vMax, f) => {
@@ -329,16 +330,42 @@ function enRgb(h, s, l){
   return [Math.round(f(h + 1/3) * 255), Math.round(f(h) * 255), Math.round(f(h - 1/3) * 255)];
 }
 const estHerbe = (h, s, l) => h >= 60 && h <= 170 && s > .15 && l > .12 && l < .85;
+const estSable = (h, s, l) => h >= 22 && h <= 55 && s > .25 && l > .5;
+const estNuit = (h, s, l) => h >= 200 && h <= 300 && l < .45;           /* le ciel de l'espace et ses nébuleuses */
+const estSoleil = (h, s, l) => h >= 30 && h <= 55 && s > .6 && l > .45;
+/* lieu : "herbe" (potager, goûter), "sable" (plage) ou "ciel" (espace) */
 const SOLS = {
-  noel(h, s, l){
+  noel(h, s, l, lieu){
     if (estHerbe(h, s, l)) return l < .26 ? [h, s * .6, l] : [205, .4, borne(.88 + (l - .5) * .6, .74, .97)];
-    if (h >= 22 && h <= 52 && s > .25 && l > .5) return [h, s * .55, l + (1 - l) * .35];      /* sable et chemins givrés */
+    if (lieu === "sable" && estSable(h, s, l)) return [h, s * .3, l + (1 - l) * .55];         /* la plage sous la neige */
+    if (lieu !== "ciel" && estSable(h, s, l)) return [h, s * .55, l + (1 - l) * .35];        /* chemins givrés (pas le soleil !) */
+    if (lieu === "ciel" && estNuit(h, s, l)) return [h - 10, s * .8, l * 1.12];               /* une nuit d'hiver, plus bleue */
     if (h >= 180 && h <= 215 && s > .3 && l > .35) return [h + 6, s * .7, l + (1 - l) * .3];  /* l'eau se glace un peu */
     return null;
   },
-  halloween(h, s, l){ return estHerbe(h, s, l) ? [36 + (h - 93) * .3, Math.min(.62, s * 1.05), l * .8] : null; },   /* l'herbe d'automne, dorée */
-  paques(h, s, l){ return estHerbe(h, s, l) ? [h + 4, s * 1.12, Math.min(.9, l * 1.06)] : null; },
-  ete(h, s, l){ return estHerbe(h, s, l) ? [h - 15, s * .95, Math.min(.9, l * 1.05)] : null; },
+  halloween(h, s, l, lieu){
+    if (estHerbe(h, s, l)) return [36 + (h - 93) * .3, Math.min(.62, s * 1.05), l * .8];     /* l'herbe d'automne, dorée */
+    if (lieu === "sable" && estSable(h, s, l)) return [h - 6, s * .7, l * .8];                /* sable du soir */
+    if (lieu === "ciel" && estNuit(h, s, l)) return [h + 42, s * 1.1, l * .95];               /* nuit violette */
+    if (lieu === "ciel" && estSoleil(h, s, l)) return [h - 18, Math.min(1, s * 1.1), l * .95];/* soleil citrouille */
+    return null;
+  },
+  carnaval(h, s, l, lieu){
+    if (lieu === "ciel" && estNuit(h, s, l)) return [h + 55, s * 1.15, l * 1.05];             /* nuit de fête, prune */
+    return null;
+  },
+  paques(h, s, l, lieu){
+    if (estHerbe(h, s, l)) return [h + 4, s * 1.12, Math.min(.9, l * 1.06)];
+    if (lieu === "sable" && estSable(h, s, l)) return [h - 8, s * .95, Math.min(.92, l * 1.04)];
+    if (lieu === "ciel" && estNuit(h, s, l)) return [h + 22, s * .9, l * 1.25];               /* ciel pastel */
+    return null;
+  },
+  ete(h, s, l, lieu){
+    if (estHerbe(h, s, l)) return [h - 15, s * .95, Math.min(.9, l * 1.05)];
+    if (lieu === "sable" && estSable(h, s, l)) return [h + 3, Math.min(1, s * 1.15), Math.min(.92, l * 1.03)];
+    if (lieu === "ciel" && estNuit(h, s, l)) return [h - 28, s, l * 1.1];                     /* nuit d'été, bleu-vert */
+    return null;
+  },
 };
 
 /* les petits décors posés sur l'herbe */
@@ -398,8 +425,101 @@ const DECORS_FETE = {
   } },
 };
 
-function habilleSol(x, k){
-  const regle = SOLS[idFete], decor = DECORS_FETE[idFete];
+/* ── les décors de la plage (sur le sable) et de l'espace (dans le ciel, loin des anneaux) ── */
+function pingouin(x, y, g){
+  ov(x, y - 8, 7, 9.5, "#2B2B3A", g, .8); ov(x, y - 6.5, 4.6, 7, "#FFFFFF", g + 1, 0);
+  ov(x, y - 17, 5, 4.6, "#2B2B3A", g + 2, .4);
+  ov(x - 1.8, y - 17.5, 1.3, 1.3, "#FFFFFF", 0, 0); ov(x + 1.8, y - 17.5, 1.3, 1.3, "#FFFFFF", 0, 0);
+  ov(x - 1.6, y - 17.4, .6, .6, "#2B211B", 0, 0); ov(x + 2, y - 17.4, .6, .6, "#2B211B", 0, 0);
+  fo([x - 1.6, y - 15.6, x + 1.6, y - 15.6, x, y - 13.4], "#F2B33B", g, 0);
+  ov(x - 3, y + 1, 2.6, 1.3, "#F2B33B", g, 0); ov(x + 3, y + 1, 2.6, 1.3, "#F2B33B", g + 1, 0);
+  bande(x - 5, y - 11, x + 5, y - 11, 2.2, "#C8323A", g, 0);
+}
+function fantome(x, y, g){
+  fo([x - 8, y, x - 8, y - 12, x - 5, y - 19, x, y - 21, x + 5, y - 19, x + 8, y - 12, x + 8, y, x + 5, y - 3, x + 2.5, y, x, y - 3, x - 2.5, y, x - 5, y - 3], "#FBF8F2", g, .8);
+  ov(x - 2.8, y - 13, 1.6, 2.2, "#2B211B", 0, 0); ov(x + 2.8, y - 13, 1.6, 2.2, "#2B211B", 0, 0);
+  ov(x, y - 8.5, 1.6, 1.9, "#2B211B", 0, 0);
+}
+function poussin(x, y, g){
+  ov(x, y - 6, 7, 6.5, "#FCE28A", g, .7); ov(x + 3, y - 13, 4.6, 4.4, "#FCE28A", g + 1, .4);
+  ov(x + 4.2, y - 13.8, .9, .9, "#2B211B", 0, 0);
+  fo([x + 7, y - 13.5, x + 10, y - 12.5, x + 7, y - 11.5], "#F28B2C", g, 0);
+  feuille(x - 3, y - 7, 6, 3.5, 2.6, "#F7D046", g, 0);
+  fo([x - 7, y - 4, x - 3, y - 7, x + 1, y - 4, x + 5, y - 7, x + 7, y - 4, x + 7, y, x - 7, y], "#FBF6EA", g + 2, .4);   /* la coquille */
+}
+function serviette(x, y, g){
+  c.save(); c.translate(x, y); c.rotate((hache(g) - .5) * .5);
+  bx(-14, -8, 28, 16, ["#3E9FC9", "#E883B8", "#F2B33B"][g % 3], g, .6);
+  for (let i = 0; i < 3; i++) bande(-14, -4 + i * 4, 14, -4 + i * 4, 1.6, "#FFFFFF", g + i, 0);
+  c.restore();
+}
+function parasol(x, y, g){
+  ov(x + 4, y + 2, 16, 5, "rgba(0,0,0,.12)", 0, 0);
+  bande(x, y, x, y - 22, 1.8, "#8E6440", g, 0);
+  const coul = ["#E0533D", "#3E9FC9", "#F2B33B"][g % 3];
+  fo([x - 17, y - 20, x - 8, y - 29, x, y - 31, x + 8, y - 29, x + 17, y - 20], coul, g, .7);
+  fo([x - 6, y - 21, x - 3, y - 30, x + 3, y - 30, x + 6, y - 21], "#FFFFFF", g + 1, 0);
+}
+function etoileMer(x, y, g){ etoile5(x, y, 7, 3, "#F28D6B", g, .6, -Math.PI / 2 + hache(g)); ov(x, y, 1.4, 1.4, "#FCE28A", 0, 0); }
+function ballon(x, y, g, r = 7){
+  ov(x, y, r, r, "#FFFFFF", g, .7);
+  fo([x - r, y, x - r * .3, y - r * .95, x + r * .15, y - r, x + r * .1, y + r * .98, x - r * .3, y + r * .95], "#E0533D", g, 0);
+  fo([x + r * .35, y - r * .9, x + r, y - r * .1, x + r * .9, y + r * .4, x + r * .35, y + r * .9], "#3E9FC9", g + 1, 0);
+}
+function boule(x, y, g){
+  bande(x, y - 18, x, y - 9, 1, "rgba(255,255,255,.55)", g, 0);
+  bx(x - 2, y - 10, 4, 3, "#D9A520", g, 0);
+  ov(x, y - 2, 7, 7, ["#C8323A", "#3E9FC9", "#F2B33B", "#2F8F6B"][g % 4], g, .6);
+  ov(x - 2.4, y - 4.4, 2, 1.6, "rgba(255,255,255,.6)", 0, 0);
+  bande(x - 6.5, y - 1, x + 6.5, y - 1, 1.4, "rgba(255,255,255,.7)", g, 0);
+}
+function sucreOrge(x, y, g){
+  c.save(); c.translate(x, y); c.rotate((hache(g) - .5) * 1.2);
+  c.beginPath(); c.moveTo(0, 10); c.lineTo(0, -6); c.arc(-4, -6, 4, 0, Math.PI, true);
+  c.lineWidth = 3.6; c.lineCap = "round"; c.strokeStyle = "#FFFFFF"; c.stroke();
+  c.setLineDash([2.5, 3]); c.strokeStyle = "#C8323A"; c.stroke(); c.setLineDash([]);
+  c.restore();
+}
+function lune(x, y, g){
+  ov(x, y, 30, 30, "#F4EDD2", g, 1.2);
+  ov(x - 9, y - 6, 6, 5, "#E2D9B8", g + 1, 0); ov(x + 8, y + 9, 8, 6, "#E2D9B8", g + 2, 0); ov(x + 11, y - 11, 3.5, 3, "#E2D9B8", g + 3, 0);
+  chauveSouris(x - 4, y + 4, 1.4, g, 1);
+}
+function masque(x, y, g){
+  const coul = ["#E0338C", "#7A4E9E", "#3E9FC9", "#F2B33B"][g % 4];
+  fo([x - 13, y - 4, x - 6, y - 7, x, y - 4, x + 6, y - 7, x + 13, y - 4, x + 11, y + 3, x + 5, y + 5, x, y + 2, x - 5, y + 5, x - 11, y + 3], coul, g, .7);
+  ov(x - 5.5, y - 1, 3, 2, "#1E1838", 0, 0); ov(x + 5.5, y - 1, 3, 2, "#1E1838", 0, 0);
+  feuille(x + 11, y - 5, 12, 4, -1.1, "#F2B33B", g, 0); feuille(x + 10, y - 5, 10, 3.5, -.7, "#FFFFFF", g + 1, 0);
+}
+function glace(x, y, g){
+  fo([x - 5, y - 6, x + 5, y - 6, x, y + 9], "#E2B06A", g, .6);
+  bande(x - 3, y - 3, x + 2, y + 4, .8, "#C48A45", g, 0);
+  ov(x, y - 9, 6, 5.5, ["#F7B8D2", "#FCE28A", "#BFE3A0"][g % 3], g, .5);
+  ov(x + 1.5, y - 14, 4.5, 4, ["#FFFFFF", "#E0533D", "#BFE0F7"][g % 3], g + 1, .3);
+}
+function bouee(x, y, g){
+  ov(x, y, 10, 10, "#FFFFFF", g, .7);
+  for (let k = 0; k < 4; k++){ c.beginPath(); c.arc(x, y, 7.8, k * Math.PI / 2, k * Math.PI / 2 + .8); c.lineWidth = 4.4; c.strokeStyle = "#E0533D"; c.stroke(); }
+  ov(x, y, 5.2, 5.2, "rgba(30,24,56,.9)", 0, 0);
+}
+const DECORS_SABLE = {
+  noel:{ n:9, dessine(x, y, i){ [sapin, bonhomme, pingouin][i % 3](x, y, i); } },
+  halloween:{ n:10, dessine(x, y, i){ if (i % 3 === 1) fantome(x, y, i); else { citrouilleSol(x, y, i, 7 + (i % 2) * 2); if (i % 2) citrouilleSol(x + 13, y + 3, i + 1, 5); } } },
+  paques:{ n:12, dessine(x, y, i){ if (i % 3 === 0) poussin(x, y, i); else { oeufSol(x, y, i); if (i % 2) oeufSol(x + 11, y + 3, i + 1); } } },
+  carnaval:DECORS_FETE.carnaval,
+  ete:{ n:10, dessine(x, y, i){ [serviette, parasol, etoileMer, ballon, etoileMer][i % 5](x, y, i); } },
+};
+const DECORS_CIEL = {
+  noel:{ n:10, dessine(x, y, i){ if (i % 3 === 2) sucreOrge(x, y, i); else if (i % 4 === 1) paquet(x, y, 7, i, ["#C8323A", "#2F8F6B"][i % 2]); else boule(x, y, i); } },
+  halloween:{ n:9, dessine(x, y, i){ if (i === 0) lune(x, y, i); else if (i % 2) fantome(x, y, i); else citrouilleSol(x, y, i, 8); } },
+  paques:{ n:10, dessine(x, y, i){ c.save(); c.translate(x, y); c.rotate((hache(i) - .5) * 1.4); c.scale(1.4, 1.4); oeufSol(0, 0, i); c.restore(); } },
+  carnaval:{ n:10, dessine(x, y, i){ if (i % 2) masque(x, y, i); else DECORS_FETE.carnaval.dessine(x, y, i); } },
+  ete:{ n:10, dessine(x, y, i){ [glace, bouee, ballon][i % 3](x, y, i); } },
+};
+
+function habilleSol(x, k, monde){
+  const lieu = monde && monde.id === "espace" ? "ciel" : monde && monde.id === "plage" ? "sable" : "herbe";
+  const regle = SOLS[idFete], decor = (lieu === "ciel" ? DECORS_CIEL : lieu === "sable" ? DECORS_SABLE : DECORS_FETE)[idFete];
   if (!regle && !decor) return;
   const w = k.width, h = k.height;
   let img;
@@ -411,7 +531,7 @@ function habilleSol(x, k){
       const cle = d[i] << 16 | d[i + 1] << 8 | d[i + 2];
       let v = memo.get(cle);
       if (v === undefined){
-        const n = regle(...enHsl(d[i], d[i + 1], d[i + 2]));
+        const n = regle(...enHsl(d[i], d[i + 1], d[i + 2]), lieu);
         if (n){ const [r, g, b] = enRgb(...n); v = r << 16 | g << 8 | b; } else v = -1;
         memo.set(cle, v);
       }
@@ -421,21 +541,115 @@ function habilleSol(x, k){
   }
   if (!decor) return;
   const sc = w / W;
-  const herbeEn = (gx, gy) => {
+  /* où a-t-on le droit de poser un décor ? */
+  const geo = lieu === "ciel" && monde.geo ? monde.geo() : null;
+  const libre = lieu === "herbe" ? estHerbe : lieu === "sable" ? estSable : (h2, s2, l2) => l2 < .42;
+  const zone = lieu === "sable" ? (gx, gy) => gx > 230 && gx < 830 && gy > 96
+             : geo ? (gx, gy) => { const r = dist(gx, gy, geo.CX, geo.CY); return r > 90 && geo.anneaux.every(A => Math.abs(r - A.r) > 36); }
+             : () => true;
+  const okEn = (gx, gy) => {
     const px = Math.round(gx * sc), py = Math.round(gy * sc);
     if (px < 0 || py < 0 || px >= w || py >= h) return false;
     const i = (py * w + px) * 4;
-    return estHerbe(...enHsl(avant[i], avant[i + 1], avant[i + 2]));
+    return libre(...enHsl(avant[i], avant[i + 1], avant[i + 2]));
   };
   const autour = [[0, 0], [-18, 4], [18, 4], [0, -26], [-12, -14], [12, -14], [0, 10], [-20, -10], [20, -10]];
   const poses = [];
   avec(x, () => {
-    for (let i = 0; i < 400 && poses.length < decor.n; i++){
+    for (let i = 0; i < 500 && poses.length < decor.n; i++){
       const gx = 28 + hache(i * 5.37 + 11) * (W - 56), gy = 34 + hache(i * 2.91 + 7) * (H - 60);
       if (poses.some(([a, b]) => dist(a, b, gx, gy) < 90)) continue;
-      if (!autour.every(([a, b]) => herbeEn(gx + a, gy + b))) continue;
+      if (!zone(gx, gy) || !autour.every(([a, b]) => okEn(gx + a, gy + b))) continue;
       decor.dessine(gx, gy, poses.length);
       poses.push([gx, gy]);
     }
   });
+}
+
+/* ── dans l'espace, quelqu'un passe dans le ciel de temps en temps ── */
+function passageEspace(){
+  const t = J.t;
+  if (idFete === "carnaval"){ feuxArtifice(t); return; }
+  const periode = 26, duree = 9, p = (t + 6) % periode;
+  if (p > duree) return;
+  const tour = Math.floor((t + 6) / periode), sens = tour % 2 ? -1 : 1;
+  const x = sens > 0 ? -120 + p / duree * (W + 240) : W + 120 - p / duree * (W + 240);
+  const y = 70 + hache(tour * 3.3) * 110 + Math.sin(t * 1.8) * 10;
+  c.save(); c.translate(x, y); if (sens < 0) c.scale(-1, 1);
+  if (idFete === "noel") traineau(t);
+  else if (idFete === "halloween") sorciere(t);
+  else if (idFete === "paques") oeufFusee(t);
+  else if (idFete === "ete") banderole(t, sens);
+  c.restore();
+}
+function traineau(t){
+  for (let i = 0; i < 6; i++){ const k = Math.sin(t * 7 + i * 1.3); if (k > .2) etoile5(-40 - i * 12, 6 + Math.sin(i * 2.1) * 6, 3.4 * k, 1.4 * k, "#FFF3C4", i, 0); }
+  for (let r = 0; r < 3; r++){
+    const rx = 40 + r * 24, saut = Math.sin(t * 9 + r) * 2.5;
+    c.beginPath(); c.moveTo(14, 0); c.lineTo(rx - 6, saut - 2); c.strokeStyle = "#C9A35A"; c.lineWidth = 1.2; c.stroke();
+    ov(rx, saut, 8, 4.5, "#8E5A2E", r, .5);
+    for (const s of [-1, 1]) bande(rx + s * 4, saut + 2, rx + s * 5 + Math.sin(t * 12 + r + s) * 2, saut + 8, 1.6, "#6F4426", r, 0);
+    ov(rx + 8, saut - 5, 3.6, 3, "#8E5A2E", r + 1, .3);
+    bande(rx + 7, saut - 7, rx + 5, saut - 13, 1.2, "#5E3A1E", r, 0); bande(rx + 9, saut - 7, rx + 11, saut - 13, 1.2, "#5E3A1E", r, 0);
+    if (r === 2) ov(rx + 11.5, saut - 5, 1.6, 1.6, "#E0533D", 0, 0);
+  }
+  fo([-22, -4, 14, -4, 18, -12, 14, 4, -20, 4, -26, -2], "#C8323A", 1, .8);
+  bande(-24, 7, 18, 7, 1.8, "#D9A520", 1, 0); bande(-24, 7, -28, 2, 1.8, "#D9A520", 2, 0);
+  paquet(-14, -10, 5, 3, "#2F8F6B"); paquet(-4, -12, 4, 4, "#3E9FC9");
+  ov(6, -10, 6, 6.5, "#C8323A", 5, .4); ov(7, -17, 4, 3.8, "#F2C9B0", 6, 0);
+  ov(7.5, -14.5, 3.6, 2.6, "#FFFFFF", 7, 0);
+  fo([3, -19, 11, -19, 6, -26], "#C8323A", 8, 0); ov(6, -26, 1.6, 1.6, "#FFFFFF", 0, 0);
+}
+function sorciere(t){
+  for (let i = 0; i < 5; i++){ const k = Math.sin(t * 6 + i * 1.7); if (k > .3) etoile5(-34 - i * 11, 4 + Math.sin(i * 1.9) * 5, 3 * k, 1.3 * k, "#F2B33B", i, 0); }
+  bande(-22, 4, 26, -2, 2.2, "#8E6440", 1, .4);
+  fo([-22, 4, -36, -3, -38, 4, -36, 11], "#C9A35A", 2, .3);
+  fo([-4, 2, 6, 1, 4, -14, -6, -10], "#3B2A4A", 3, .5);
+  fo([-6, -10, -14, -2 + Math.sin(t * 8) * 2, -18, 4 + Math.sin(t * 8) * 3, -4, 0], "#2E2236", 4, 0);
+  ov(4, -17, 4.6, 4.4, "#9CC97A", 5, .3);
+  ov(5.5, -17.5, .8, .8, "#2B211B", 0, 0);
+  ov(-1, -20, 9, 2.4, "#2E2236", 6, 0); fo([-5, -20, 5, -20, 2, -31, -4, -28], "#2E2236", 7, 0);
+  ov(14, -4, 2.6, 2.6, "#7BE0A8", 0, 0);
+}
+function oeufFusee(t){
+  for (let i = 0; i < 4; i++) ov(-24 - i * 7 + Math.sin(t * 20 + i) * 1.5, 0, 6 - i, 4 - i * .6, ["#F2B33B", "#F28B2C", "#E0533D", "#FCE28A"][i], i, 0);
+  c.save(); c.rotate(Math.PI / 2);
+  ov(0, 0, 13, 17, "#F7B8D2", 1, .8);
+  bande(-12.6, -2, 12.6, -2, 3, "#FFFFFF", 1, 0); bande(-11, 6, 11, 6, 2.4, "#BFE0F7", 2, 0);
+  c.restore();
+  ov(6, -1, 5, 5, "#BFE0F7", 3, .3); ov(6, -1, 3.4, 3.4, "#FFFFFF", 4, 0);
+  feuille(4, -5, 8, 3, -1.9, "#FFFFFF", 5, 0); feuille(8, -5, 8, 3, -1.2, "#FFFFFF", 6, 0);
+}
+function banderole(t, sens){
+  c.beginPath(); c.moveTo(-14, 0);
+  for (let k = 1; k <= 8; k++) c.lineTo(-14 - k * 6, Math.sin(t * 5 + k) * 1.5);
+  c.strokeStyle = "rgba(255,255,255,.7)"; c.lineWidth = 1; c.stroke();
+  const bx0 = -170;
+  const pts = [];
+  for (let k = 0; k <= 10; k++) pts.push(bx0 + k * 11.5, -9 + Math.sin(t * 5 + k * .7) * 2.2);
+  for (let k = 10; k >= 0; k--) pts.push(bx0 + k * 11.5, 9 + Math.sin(t * 5 + k * .7) * 2.2);
+  papier(pts, "#FCE28A", .6);
+  c.save(); c.translate(bx0 + 57, 0); if (sens < 0) c.scale(-1, 1); texteP("Vive l'été !", 0, 0, 13, "#E0533D", "center", null); c.restore();
+  ov(0, 4, 18, 6, "#7BE0A8", 1, .8); ov(0, -1, 9, 7, "#BFE0F7", 2, .3);
+  ov(0, -2, 4.5, 4.4, "#7BE0A8", 3, 0);
+  bx(-4.6, -4, 9.2, 2.4, "#2B211B", 4, 0);
+  for (let k = -1; k <= 1; k++) ov(k * 9, 5, 1.8, 1.8, ["#F2B33B", "#E0533D", "#3E9FC9"][k + 1], 0, 0);
+}
+function feuxArtifice(t){
+  for (let i = 0; i < 4; i++){
+    const per = 2.8, q = (t + i * .73) / per, n = Math.floor(q), p = q - n;
+    const x = 80 + hache(n * 7.1 + i) * (W - 160), y = 60 + hache(n * 3.7 + i * 2) * 200;
+    const coul = FETES.carnaval.titre[(n + i) % FETES.carnaval.titre.length];
+    if (p < .28){
+      const k = p / .28; ov(x, H + 10 - (H + 10 - y) * k, 2.2, 3.6, "#FFF3C4", i, 0);
+      continue;
+    }
+    const k = (p - .28) / .72, r = 10 + k * 46;
+    c.globalAlpha = Math.max(0, 1 - k * 1.1);
+    for (let a = 0; a < 14; a++){
+      const ang = a / 14 * TAU + n;
+      bande(x + Math.cos(ang) * r * .55, y + Math.sin(ang) * r * .55 + k * 8, x + Math.cos(ang) * r, y + Math.sin(ang) * r + k * 12, 2.2, coul, a, 0);
+    }
+    c.globalAlpha = 1;
+  }
 }
