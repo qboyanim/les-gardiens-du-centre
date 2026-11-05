@@ -1152,6 +1152,11 @@ RACINE.innerHTML = `
     <div class="gdc-menu"></div>
     <div class="gdc-jeu" hidden>
       <div class="gdc-haut"></div>
+      <div class="gdc-astuce-ecran" hidden>
+        <span>Tourne ton téléphone pour un plus grand plateau.</span>
+        <button class="gdc-bouton sapin" data-a="plein">⛶ Plein écran</button>
+        <button class="gdc-x" data-a="fermer" title="Fermer">×</button>
+      </div>
       <div class="gdc-scene">
         <canvas class="gdc-toile" aria-label="Plateau de jeu"></canvas>
         <div class="gdc-banniere"></div>
@@ -1170,7 +1175,66 @@ function redim(){
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
   fondCache = null;
 }
-window.addEventListener("resize", () => { if (!$(".gdc-jeu").hidden) redim(); });
+/* ── la taille : le plateau prend toute la place possible, sans faire défiler ── */
+const enPaysageBas = () => matchMedia("(max-height: 520px) and (orientation: landscape)").matches;
+let tailleFixee = "";
+function ajusteTaille(){
+  const jeu = $(".gdc-jeu"); if (jeu.hidden) return;
+  const scene = $(".gdc-scene"), bas = $(".gdc-bas"), haut = $(".gdc-haut"), astuce = $(".gdc-astuce-ecran");
+  const cote = enPaysageBas();
+  const vh = window.innerHeight;
+  const marge = estPlein() ? 26 : cote ? 22 : 64;
+  const dispoH = vh - haut.offsetHeight - (cote ? 0 : bas.offsetHeight) - (astuce.hidden ? 0 : astuce.offsetHeight + 8) - marge;
+  const dispoL = jeu.clientWidth - (cote ? bas.offsetWidth + 8 : 0);
+  const larg = Math.round(Math.max(250, Math.min(dispoL, dispoH * W / H)));
+  const cle = larg + ":" + cote;
+  if (cle !== tailleFixee){ tailleFixee = cle; scene.style.width = larg + "px"; redim(); }
+}
+let attenteTaille = 0;
+const plusTard = () => { clearTimeout(attenteTaille); attenteTaille = setTimeout(() => { tailleFixee = ""; ajusteTaille(); if (J && J.choisie) majFiche(true); }, 60); };
+window.addEventListener("resize", plusTard);
+window.addEventListener("orientationchange", plusTard);
+
+/* ── le plein écran (le vrai quand le navigateur le permet, sinon le jeu couvre la page) ── */
+const estPlein = () => RACINE.classList.contains("gdc-plein");
+function basculePlein(){
+  const actif = estPlein();
+  const doc = document, el = RACINE;
+  if (!actif){
+    RACINE.classList.add("gdc-plein");
+    const demande = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (demande){
+      try {
+        const p = demande.call(el);
+        if (p && p.then) p.then(() => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock("landscape").catch(() => {}); } catch(e){} }).catch(() => {});
+      } catch(e){}
+    }
+  } else {
+    RACINE.classList.remove("gdc-plein");
+    const sort = doc.exitFullscreen || doc.webkitExitFullscreen;
+    if ((doc.fullscreenElement || doc.webkitFullscreenElement) && sort) try { sort.call(doc); } catch(e){}
+  }
+  majBoutonsPlein(); plusTard();
+}
+function majBoutonsPlein(){
+  for (const b of RACINE.querySelectorAll('[data-a="plein"]')) b.innerHTML = estPlein() ? "⤡ Quitter le plein écran" : "⛶ Plein écran";
+  if (hud.plein) hud.plein.textContent = estPlein() ? "⤡" : "⛶";
+  majAstuceEcran();
+}
+const surSortiePlein = () => { if (!(document.fullscreenElement || document.webkitFullscreenElement) && estPlein() && !RACINE.dataset.pseudo) { RACINE.classList.remove("gdc-plein"); majBoutonsPlein(); plusTard(); } };
+document.addEventListener("fullscreenchange", surSortiePlein);
+document.addEventListener("webkitfullscreenchange", surSortiePlein);
+/* le petit bandeau « tourne ton téléphone », seulement en portrait sur un petit écran */
+function majAstuceEcran(){
+  const a = $(".gdc-astuce-ecran");
+  const portrait = window.innerWidth < 600 && window.innerHeight > window.innerWidth;
+  a.hidden = !portrait || estPlein() || memoire.lis("astuceEcran", false);
+}
+RACINE.addEventListener("click", (ev) => {
+  const b = ev.target.closest('[data-a="plein"]');
+  if (b){ basculePlein(); return; }
+  if (ev.target.closest('.gdc-astuce-ecran [data-a="fermer"]')){ memoire.ecris("astuceEcran", true); majAstuceEcran(); plusTard(); }
+});
 
 /* ── barre du haut ── */
 let hud = {};
@@ -1207,6 +1271,7 @@ function construitHUD(){
   hud.vitesse = b("▶▶", "Vitesse", () => { J.vitesse = J.vitesse >= 3 ? 1 : J.vitesse + 1; majHUD(true); });
   hud.aide = b("?", "Comment jouer", () => montreIntro(true));
   hud.pause = b("❚❚", "Pause", () => montrePause());
+  hud.plein = b(estPlein() ? "⤡" : "⛶", "Plein écran", () => basculePlein());
 }
 function majHUD(force){
   if (!J || !hud.vies) return;
@@ -1287,6 +1352,7 @@ function majEnsuite(){
   if (E.cle === cle) return;
   E.cle = cle; E.el.innerHTML = "";
   E.el.hidden = cle === "rien";
+  plusTard();
   if (cle === "rien") return;
   const n = {}, geant = {};
   for (const g of def){
@@ -1339,6 +1405,10 @@ function coutTexte(t){ return M.coutAmelio ? M.coutAmelio(J, t) : String(prixAme
 function majFiche(force){
   const f = $(".gdc-fiche"), t = J && J.choisie;
   if (!t){ f.hidden = true; return; }
+  const petit = cv.clientWidth < 560;
+  const parent = petit ? $(".gdc-jeu") : $(".gdc-scene");
+  if (f.parentElement !== parent){ parent.append(f); force = true; }
+  f.classList.toggle("gdc-fiche-bas", petit);
   f.hidden = false;
   if (force || f.dataset.id !== String(t.id) || f.dataset.niv !== String(t.niv) || f.dataset.v !== t.visee){
     f.dataset.id = t.id; f.dataset.niv = t.niv; f.dataset.v = t.visee;
@@ -1376,11 +1446,14 @@ function majFiche(force){
     });
   }
   const larg = cv.clientWidth, haut = cv.clientHeight;
-  const px = t.x / W * larg, py = t.y / H * haut;
-  const fh = f.offsetHeight || 150;
-  const dessous = py + 40 + fh < haut;
-  f.style.left = borne(px, 125, larg - 125) + "px";
-  f.style.top = (dessous ? py + 34 : Math.max(4, py - 46 - fh)) + "px";
+  if (petit){ f.style.left = ""; f.style.top = ""; }
+  else {
+    const px = t.x / W * larg, py = t.y / H * haut;
+    const fh = f.offsetHeight || 150;
+    const dessous = py + 40 + fh < haut;
+    f.style.left = borne(px, 125, larg - 125) + "px";
+    f.style.top = (dessous ? py + 34 : Math.max(4, py - 46 - fh)) + "px";
+  }
   const peut = M.peutAmeliorer ? M.peutAmeliorer(J, t) : J.argent >= prixAmelio(t);
   f.querySelectorAll('[data-a="amel"],[data-a="b0"],[data-a="b1"]').forEach(x => x.disabled = !peut);
 }
@@ -1461,12 +1534,14 @@ function montrePause(){
     <div class="gdc-actions">
       <button class="gdc-bouton creme" data-a="menu">◂ Mondes</button>
       <button class="gdc-bouton creme" data-a="rejoue">Recommencer</button>
+      <button class="gdc-bouton creme" data-a="regles">Comment jouer</button>
       <button class="gdc-bouton creme" data-a="son">${muet ? "Son : coupé" : "Son : activé"}</button>
       <button class="gdc-bouton sapin" data-a="go">Reprendre</button>
     </div>`, (v) => {
     v.querySelector('[data-a="go"]').onclick = () => { fermeVoile(); J.pause = false; };
     v.querySelector('[data-a="menu"]').onclick = () => { fermeVoile(); montreMenu(); };
     v.querySelector('[data-a="rejoue"]').onclick = () => { fermeVoile(); lanceMonde(M, J.mode, false, J.carte); };
+    v.querySelector('[data-a="regles"]').onclick = () => montreIntro(true);
     v.querySelector('[data-a="son"]').onclick = (ev) => { muet = !muet; memoire.ecris("muet", muet); ev.target.textContent = muet ? "Son : coupé" : "Son : activé"; };
   });
 }
@@ -1516,7 +1591,7 @@ function montreMenu(){
       `<span style="color:${couleurs[i % couleurs.length]};transform:rotate(${(hache(i) - .5) * 12}deg) translateY(${(hache(i + 9) - .5) * 6}px)">${l}</span>`).join("")}</h1>
     <p class="gdc-sous-titre">Quatre mondes, quatre façons de jouer. Pose tes défenseurs, repousse les bestioles gourmandes et protège ce qui compte !</p>
     <div class="gdc-mondes"></div>
-    <div class="gdc-pied"><button class="gdc-bouton creme" data-a="son">${muet ? "🔇 Son coupé" : "🔊 Son activé"}</button></div>`;
+    <div class="gdc-pied"><button class="gdc-bouton creme" data-a="son">${muet ? "🔇 Son coupé" : "🔊 Son activé"}</button><button class="gdc-bouton creme" data-a="plein">${estPlein() ? "⤡ Quitter le plein écran" : "⛶ Plein écran"}</button></div>`;
   const liste = m.querySelector(".gdc-mondes");
   for (const monde of MONDES){
     const b = document.createElement("button"); b.className = "gdc-monde";
@@ -1602,6 +1677,7 @@ function lanceMonde(monde, mode, intro, carte = 0){
   $(".gdc-scene").style.background = monde.couleurFond || "#7DB359";
   redim();
   construitHUD(); construitBoutique(); majHUD(true);
+  majAstuceEcran(); tailleFixee = ""; ajusteTaille();
   $(".gdc-fiche").hidden = true;
   if (intro){ J.pause = true; montreIntro(false); }
 }
