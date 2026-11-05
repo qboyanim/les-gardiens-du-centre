@@ -2037,8 +2037,9 @@ function montreIntro(enJeu){
     <ul>
       <li><b>30 vagues</b>, un boss aux vagues 10, 20 et 30, des géants aux vagues 5, 15 et 25. Les 10 premières vagues servent à s'installer ; ensuite, ça devient sérieux.</li>
       <li>De <b>nouveaux défenseurs se débloquent</b> au fil des vagues : plus chers, plus forts, et chacun a son rôle (son étiquette de couleur).</li>
-      <li>Certaines bestioles <b>volent</b>, sont <b>blindées</b>, ont un <b>bouclier</b>, sont <b>invisibles</b> ou arrivent en <b>nuée</b>. Le cadre « Ensuite » en bas à gauche montre ce qui arrive : prépare le bon mélange de défenseurs !</li>
-      <li>Au niveau 3, chaque défenseur choisit <b>une spécialité parmi deux</b>.</li>
+      <li>Certaines bestioles <b>volent</b>, sont <b>blindées</b>, ont un <b>bouclier</b>, sont <b>invisibles</b> ou arrivent en <b>nuée</b>. Le cadre « Ensuite », dans la barre du haut, montre ce qui arrive : prépare le bon mélange de défenseurs !</li>
+      <li><b>Double-clique</b> (ou touche deux fois) un défenseur pour l'améliorer tout de suite, sans ouvrir sa fiche.</li>
+      <li>Au niveau 3, chaque défenseur choisit <b>une spécialité parmi deux</b> : là, sa fiche s'ouvre pour que tu choisisses.</li>
       <li>Attrape les <b>cadeaux</b> qui tombent, enchaîne les <b>combos</b> et vise les bestioles <b>dorées</b>.</li>
       <li>Appeler la vague suivante plus tôt rapporte un petit <b>bonus</b>.</li>
     </ul>
@@ -2280,7 +2281,36 @@ function clic(p){
   }
   let meilleur = null, md = 30;
   for (const t of J.tours){ const d = dist(p.x, p.y, t.x, t.y - 8); if (d < md){ md = d; meilleur = t; } }
-  choisisTour(meilleur);
+  /* deux clics rapprochés sur le même défenseur : on l'améliore sans ouvrir sa fiche */
+  clearTimeout(minuterieFiche);
+  const maintenant = performance.now();
+  if (meilleur && dernierClic && dernierClic.t === meilleur && maintenant - dernierClic.h < DOUBLE_CLIC){
+    dernierClic = null;
+    ameliorationRapide(meilleur);
+    return;
+  }
+  dernierClic = meilleur ? { t: meilleur, h: maintenant } : null;
+  if (!meilleur){ choisisTour(null); return; }
+  if (J.choisie === meilleur) return;
+  if (J.choisie) choisisTour(null);
+  /* la fiche attend un instant : si un second clic arrive, elle ne s'ouvre pas */
+  minuterieFiche = setTimeout(() => { if (J && J.tours.includes(meilleur) && !J.fini) choisisTour(meilleur); }, DOUBLE_CLIC);
+}
+const DOUBLE_CLIC = 280;
+let dernierClic = null, minuterieFiche = 0;
+function ameliorationRapide(t){
+  const ouverte = J.choisie === t;
+  const choixAFaire = t.niv === 2 && t.d.branches && !(M.texteAvant && M.texteAvant(J, t));
+  if (t.d.sansNiveau || t.niv >= 3 || choixAFaire){
+    /* rien à améliorer d'un coup : niveau max, ou une spécialité à choisir */
+    if (choixAFaire) texte("Choisis sa spécialité", t.x, t.y - 44, "#fff", 14);
+    else if (!t.d.sansNiveau) texte("Niveau max", t.x, t.y - 44, "#fff", 14);
+    choisisTour(t); return;
+  }
+  const peut = M.peutAmeliorer ? M.peutAmeliorer(J, t) : J.argent >= prixAmelio(t);
+  if (!peut){ amelioreTour(t); choisisTour(t); return; }   /* le refus fait clignoter ce qui manque, la fiche montre le prix */
+  if (!ouverte) J.choisie = null;
+  amelioreTour(t);
 }
 document.addEventListener("keydown", (ev) => {
   if (!J || $(".gdc-jeu").hidden || /input|textarea|select/i.test(ev.target.tagName)) return;
