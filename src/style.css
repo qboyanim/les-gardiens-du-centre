@@ -3,7 +3,7 @@
    Tout le reste est préfixé #gdc / .gdc- et ne touche à rien d'autre.
    ═════════════════════════════════════════════════════════════ */
 body{
-  margin:0; min-height:100vh; padding:18px 12px 40px;
+  margin:0; min-height:100vh; padding:28px 12px 40px;
   background:#E8D9BF;
   background-image:
     radial-gradient(rgba(120,80,40,.10) 1px, transparent 1.4px),
@@ -516,4 +516,32 @@ body{
 }
 @media (prefers-reduced-motion:reduce){
   #gdc *{ animation:none !important; transition:none !important; }
+}
+
+/* ═════════════════════════════════════════════════════════════
+   LES FÊTES (voir src/fetes.js pour la liaison avec le site)
+   ═════════════════════════════════════════════════════════════ */
+#gdc .gdc-guirlande{
+  position:absolute; left:16px; right:16px; top:-21px; height:34px; z-index:4;
+  pointer-events:none; background-repeat:repeat-x; background-size:480px 34px; background-position:center top;
+}
+#gdc .gdc-guirlande[hidden], #gdc.gdc-plein .gdc-guirlande{ display:none; }
+#gdc .gdc-fete-badge{
+  display:table; margin:8px auto 0; padding:4px 14px 3px;
+  font:400 17px/1.2 var(--titre); color:#fff;
+  background:var(--fete, var(--tomate)); border-radius:12px 9px 13px 8px;
+  box-shadow:2px 3px 0 var(--ombre); transform:rotate(-1.5deg);
+}
+#gdc[data-fete="halloween"]{ --kraft:#E6A766; --kraft-fonce:#B5682F; --creme-2:#F8E3C8; --fete:#7A4E9E; }
+#gdc[data-fete="noel"]{ --kraft:#CFE2EA; --kraft-fonce:#93B6C6; --creme-2:#EAF3F6; --fete:#C8323A; }
+#gdc[data-fete="carnaval"]{ --kraft:#F2C6DA; --kraft-fonce:#CC8DAD; --creme-2:#FBE6EF; --fete:#7A4E9E; }
+#gdc[data-fete="paques"]{ --kraft:#D9EAC0; --kraft-fonce:#A6C584; --creme-2:#F0F7E4; --fete:#E883B8; }
+#gdc[data-fete="ete"]{ --kraft:#F4D596; --kraft-fonce:#D6A65A; --creme-2:#FDF0D2; --fete:#3E9FC9; }
+#gdc[data-fete="halloween"].gdc-plein, #gdc[data-fete="halloween"]:fullscreen{ background:#E6A766; }
+#gdc[data-fete="noel"].gdc-plein, #gdc[data-fete="noel"]:fullscreen{ background:#CFE2EA; }
+#gdc[data-fete="carnaval"].gdc-plein, #gdc[data-fete="carnaval"]:fullscreen{ background:#F2C6DA; }
+#gdc[data-fete="paques"].gdc-plein, #gdc[data-fete="paques"]:fullscreen{ background:#D9EAC0; }
+#gdc[data-fete="ete"].gdc-plein, #gdc[data-fete="ete"]:fullscreen{ background:#F4D596; }
+@media (max-height:520px) and (orientation:landscape){
+  #gdc .gdc-guirlande{ display:none; }
 }

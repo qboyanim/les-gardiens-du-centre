@@ -23,9 +23,38 @@ Commandes : souris ou doigt ; touches 1 à 9 pour choisir un défenseur, A et Z 
 
 Le fichier `les-gardiens-du-centre.html` suffit. Pour l'intégrer dans une page existante, il faut le `<div id="gdc">`, le `<style>` et le `<script>` ; tout est préfixé `gdc` pour ne rien casser autour.
 
+### Les fêtes : le jeu suit le thème du site
+
+Le jeu s'habille selon la fête : guirlande au-dessus du cadre, couleurs, décor du plateau, chapeaux des bestioles et cadeaux.
+
+| Fête | Ce qui change |
+|---|---|
+| `habituel` | rien, c'est la tenue de tous les jours |
+| `halloween` | citrouilles, chauves-souris, toiles d'araignée, feuilles mortes, chapeaux de sorcière |
+| `noel` | guirlande lumineuse, neige, bonnets rouges, paquets rouges et verts |
+| `carnaval` | fanions, confettis, serpentins, chapeaux pointus |
+| `paques` | fanions pastel, œufs, pétales, papillons, oreilles de lapin |
+| `ete` | fanions marins, soleil, reflets, chapeaux de paille |
+
+La liaison est expliquée en tête de `src/fetes.js` (cherchez « C'EST ICI POUR FAIRE LA LIAISON »). En bref :
+
+```html
+<!-- au chargement : avant le script du jeu -->
+<script>window.LILOUS_FETE = "halloween";</script>
+<!-- ou un attribut : <div id="gdc" data-fete="halloween">, <html data-fete="…"> ou <body data-theme="…"> -->
+```
+
+```js
+// en direct, quand le site change de thème
+window.GardiensDuCentre.fete("Noël / Hiver");
+document.dispatchEvent(new CustomEvent("lilous:fete", { detail: "carnaval" }));
+```
+
+On peut envoyer tel quel le libellé du site (« Pâques / Printemps », « Été / Plage »…) : les majuscules et les accents ne comptent pas. Pour essayer sans rien toucher, ajoutez `?fete=halloween` à l'adresse du jeu.
+
 ## Pour les développeurs
 
-Les sources sont dans `src/` (un moteur commun + un fichier par monde + le style). Ne pas modifier le fichier HTML à la main : il est fabriqué par
+Les sources sont dans `src/` (un moteur commun + les fêtes + un fichier par monde + le style). Ne pas modifier le fichier HTML à la main : il est fabriqué par
 
 ```bash
 node outils/assemble.js

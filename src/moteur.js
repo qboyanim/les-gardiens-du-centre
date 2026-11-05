@@ -959,6 +959,7 @@ function dessineScene(){
   for (const f of J.effets) dessineEffet(f);
   if (M.dessineDessus) M.dessineDessus(J);
 
+  dessineFete();
   /* les cadeaux */
   for (const k of J.cadeaux){
     const reste = k.dur - k.t;
@@ -967,7 +968,7 @@ function dessineScene(){
     c.save(); c.translate(k.x, k.y - (1 - arrivee) * 60 - saut);
     c.globalAlpha = .35; ov(0, 18 + saut, 16, 5, "#000", 0, 0); c.globalAlpha = 1;
     c.rotate(Math.sin(J.t * 3 + k.g) * .12);
-    paquet(0, 0, 13, k.g, ["#E0533D", "#3E9FC9", "#7A4E9E", "#2F8F6B"][k.g % 4]);
+    cadeauFete(13, k.g);
     c.restore();
   }
 
@@ -1086,7 +1087,8 @@ function dessineEnnemi(e){
   if (s !== 1) c.scale(s, s);
   if (e.flash > 0){ const k = 1 + e.flash * 1.4; c.scale(k, 2 - k); }
   if (e.dir < 0 && !e.d.sansMiroir) c.scale(-1, 1);
-  e.d.dessine(e, J.t);
+  if (FETE.chapeau){ c.save(); e.d.dessine(e, J.t); c.restore(); chapeauFete(e); }   /* certains dessins décalent le repère : le chapeau part du repère d'origine */
+  else e.d.dessine(e, J.t);
   c.restore();
   if (e.cache && !e.d.montreCache) return;
   if (e.bulleT > J.t){
@@ -1149,6 +1151,7 @@ function dessineEffet(f){
 const RACINE = document.getElementById("gdc");
 RACINE.innerHTML = `
   <div class="gdc-cadre">
+    <div class="gdc-guirlande" hidden></div>
     <div class="gdc-menu"></div>
     <div class="gdc-jeu" hidden>
       <div class="gdc-haut"></div>
@@ -1586,10 +1589,11 @@ function montreMenu(){
   $(".gdc-jeu").hidden = true;
   const m = $(".gdc-menu"); m.hidden = false;
   const titre = "Les Gardiens du Centre";
-  const couleurs = ["#E0533D", "#2F8F6B", "#3E9FC9", "#7A4E9E", "#F2B33B"];
+  const couleurs = FETE.titre || ["#E0533D", "#2F8F6B", "#3E9FC9", "#7A4E9E", "#F2B33B"];
   m.innerHTML = `
     <h1 class="gdc-titre">${[...titre].map((l, i) => l === " " ? " " :
       `<span style="color:${couleurs[i % couleurs.length]};transform:rotate(${(hache(i) - .5) * 12}deg) translateY(${(hache(i + 9) - .5) * 6}px)">${l}</span>`).join("")}</h1>
+    ${FETE.badge ? `<p class="gdc-fete-badge">${FETE.badge}</p>` : ""}
     <p class="gdc-sous-titre">Quatre mondes, quatre façons de jouer. Pose tes défenseurs, repousse les bestioles gourmandes et protège ce qui compte !</p>
     <div class="gdc-mondes"></div>
     <div class="gdc-pied"><button class="gdc-bouton creme" data-a="son">${muet ? "🔇 Son coupé" : "🔊 Son activé"}</button><button class="gdc-bouton creme" data-a="plein">${estPlein() ? "⤡ Quitter le plein écran" : "⛶ Plein écran"}</button></div>`;
@@ -1819,6 +1823,7 @@ function boucle(t){
 
 function demarre(){
   GRAIN = fabriqueGrain();
+  appliqueFete(lisFete());
   montreMenu();
   requestAnimationFrame(boucle);
   if (/banc/.test(location.search + location.hash)){

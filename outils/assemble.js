@@ -4,9 +4,10 @@ const fs = require("fs"), path = require("path");
 const ici = (...p) => path.join(__dirname, "..", ...p);
 const lis = (f) => fs.readFileSync(ici("src", f), "utf8");
 
-const ORDRE = ["moteur.js", "monde-potager.js", "monde-gouter.js", "monde-plage.js", "monde-espace.js"]
+const ORDRE = ["moteur.js", "fetes.js", "monde-potager.js", "monde-gouter.js", "monde-plage.js", "monde-espace.js"]
   .filter(f => fs.existsSync(ici("src", f)));
-const js = `(() => {\n"use strict";\n${ORDRE.map(lis).join("\n\n")}\ndemarre();\n})();`;
+const js = `(() => {\n"use strict";\n${ORDRE.map(lis).join("\n\n")}\ndemarre();\n})();`
+  .replace(/<\/script/gi, "<\\/script");   /* un « </script> » dans le code (même en commentaire) fermerait la page */
 
 const page = `<!doctype html>
 <html lang="fr">
