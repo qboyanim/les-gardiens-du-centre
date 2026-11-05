@@ -469,7 +469,7 @@ Object.assign(ENNEMIS, {
       ov(10, -9 - b, 7, 6, "#6E6A67", e.g + 1, 0);
       ov(6, -15 - b, 4.5, 5, "#6E6A67", e.g + 2, 0);
       bx(6, -13 - b, 11, 4, "#2B211B", e.g + 3, 0);
-      ov(11, -11 - b, 1.3, 1.3, "#FFFFFF", 0, 0); ov(14.5, -11 - b, 1.3, 1.3, "#FFFFFF", 0, 0);
+      ov(11, -11 - b, 1.3, 1.3, "#FFFFFF", 0, 0); ov(14.5, -11 - b, 1.3, 1.3, "#FFFFFF", 0, 0); marqueTete(11, -15 - b, .8);
       bande(-10, -8 - b, -16, -4 - b, 1.5, "#2B211B", 0, 0);
       if (e.cache) c.globalAlpha = 1;
     }

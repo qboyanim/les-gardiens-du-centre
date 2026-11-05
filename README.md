@@ -25,16 +25,18 @@ Le fichier `les-gardiens-du-centre.html` suffit. Pour l'intégrer dans une page 
 
 ### Les fêtes : le jeu suit le thème du site
 
-Le jeu s'habille selon la fête : guirlande au-dessus du cadre, couleurs, décor du plateau, chapeaux des bestioles et cadeaux.
+Le jeu s'habille selon la fête : guirlande au-dessus du cadre, couleurs, sol et décor du plateau, chapeaux des bestioles et cadeaux.
 
 | Fête | Ce qui change |
 |---|---|
 | `habituel` | rien, c'est la tenue de tous les jours |
-| `halloween` | citrouilles, chauves-souris, toiles d'araignée, feuilles mortes, chapeaux de sorcière |
-| `noel` | guirlande lumineuse, neige, bonnets rouges, paquets rouges et verts |
-| `carnaval` | fanions, confettis, serpentins, chapeaux pointus |
-| `paques` | fanions pastel, œufs, pétales, papillons, oreilles de lapin |
-| `ete` | fanions marins, soleil, reflets, chapeaux de paille |
+| `halloween` | herbe d'automne, citrouilles, tas de feuilles, chauves-souris, toiles d'araignée, chapeaux de sorcière |
+| `noel` | l'herbe devient neige (sable et chemins givrés), sapins, bonshommes de neige, flocons, guirlande lumineuse, bonnets rouges |
+| `carnaval` | confettis et serpentins par terre et dans l'air, fanions, chapeaux pointus |
+| `paques` | herbe de printemps, œufs cachés, tulipes, fleurs, pétales, papillons, oreilles de lapin |
+| `ete` | herbe dorée, pâquerettes, ballon de plage, soleil, chapeaux de paille |
+
+Les chapeaux se posent sur la tête de chaque bestiole : `yeux()` la repère tout seul ; une bestiole qui dessine ses yeux à la main appelle `marqueTete(x, y, taille)`.
 
 La liaison est expliquée en tête de `src/fetes.js` (cherchez « C'EST ICI POUR FAIRE LA LIAISON »). En bref :
 

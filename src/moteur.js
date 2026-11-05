@@ -117,7 +117,11 @@ function etoile5(x, y, r1, r2, coul, g = 0, prof = 1, rot = -Math.PI / 2){
   for (let i = 0; i < 10; i++){ const r = i % 2 ? r2 : r1, a = rot + i * Math.PI / 5; p.push(x + Math.cos(a) * r, y + Math.sin(a) * r); }
   fo(p, coul, g, prof);
 }
+/* pour les chapeaux de fête : on retient où la bestiole a sa tête (le bord du chapeau, sa taille) */
+let guetteTete = false, teteVue = null;
+function marqueTete(x, y, k){ if (guetteTete && !teteVue) teteVue = { m:c.getTransform(), x, y, k }; }
 function yeux(x, y, ec, r, rx = 0, ry = 0, g = 0, cligne = false){
+  marqueTete(x, y - r * 1.5, (ec + r) / 5.2);
   for (const s of [-1, 1]){
     if (cligne){ bande(x + s*ec - r*.8, y, x + s*ec + r*.8, y, r * .35, "#2B211B", g, 0); continue; }
     ov(x + s*ec, y, r, r * 1.12, "#FFFDF6", g + s, .35);
@@ -917,6 +921,7 @@ function fond(){
   k.width = W * dpr; k.height = H * dpr;
   const x = k.getContext("2d"); x.scale(dpr, dpr);
   avec(x, () => M.fond(J));
+  habilleSol(x, k);
   return (fondCache = k);
 }
 
@@ -1087,8 +1092,11 @@ function dessineEnnemi(e){
   if (s !== 1) c.scale(s, s);
   if (e.flash > 0){ const k = 1 + e.flash * 1.4; c.scale(k, 2 - k); }
   if (e.dir < 0 && !e.d.sansMiroir) c.scale(-1, 1);
-  if (FETE.chapeau){ c.save(); e.d.dessine(e, J.t); c.restore(); chapeauFete(e); }   /* certains dessins décalent le repère : le chapeau part du repère d'origine */
-  else e.d.dessine(e, J.t);
+  if (FETE.chapeau && !e.d.boss){
+    guetteTete = true; teteVue = null;
+    c.save(); e.d.dessine(e, J.t); c.restore();
+    guetteTete = false; chapeauFete(e);
+  } else e.d.dessine(e, J.t);
   c.restore();
   if (e.cache && !e.d.montreCache) return;
   if (e.bulleT > J.t){
@@ -1606,7 +1614,7 @@ function montreMenu(){
     avec(x, () => {
       const faux = { t:0, tours:[], ennemis:[], vies:monde.vies, viesMax:monde.vies, mode:"petit", apercu:true, argent:0, vague:0, file:[], cadeaux:[], carte:0 };
       if (monde.charge) monde.charge(0);
-      monde.init(faux); monde.fond(faux);
+      monde.init(faux); monde.fond(faux); habilleSol(x, k);
       if (monde.dessineSol) monde.dessineSol(faux);
       for (const [type, px, py, ang] of (monde.apercu.tours || [])){
         const d = monde.tours[type];
@@ -1644,7 +1652,7 @@ function vignette(monde, carte, larg = 320){
   avec(x, () => {
     const faux = { t:0, tours:[], ennemis:[], vies:monde.vies, viesMax:monde.vies, mode:"petit", apercu:true, argent:0, vague:0, file:[], cadeaux:[], carte };
     if (monde.charge) monde.charge(carte);
-    monde.init(faux); monde.fond(faux);
+    monde.init(faux); monde.fond(faux); habilleSol(x, k);
     if (monde.dessineSol) monde.dessineSol(faux);
   });
   OMBRE = ancien;
